@@ -24,13 +24,22 @@ class Player():
         self.y = starty
         self.velocity = 2
         self.color = color
+        self.surf = pygame.Surface((self.width, self.height))
+        self.surf.fill(self.color)
+        self.angle = 0
+        self.rotation_speed = 5
+        self.speed = 0
+        self.acceleration = 1
+        self.max_speed = 10
     
     @property
     def rect(self):
         return pygame.Rect(self.x, self.y, self.width, self.height)
     
     def draw(self, g):
-        pygame.draw.rect(g, self.color ,(self.x, self.y, self.width, self.height), 0)
+        self.surf = pygame.Surface((self.width, self.height))
+        self.surf.fill(self.color)
+        g.blit(self.surf, (self.x, self.y))
 
     def move(self, direction):
         if direction == 0:  # Rotate right
@@ -65,9 +74,13 @@ class Game:
         while run:
             clock.tick(60)
             self.camera.update(self.player)
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
 
             for entity in [self.player, self.player2]:
-                self.canvas.get_canvas().blit(entity.surf, self.camera.apply(entity))
+                entity.draw(self.canvas.get_canvas())
 
             keys = pygame.key.get_pressed()
 
