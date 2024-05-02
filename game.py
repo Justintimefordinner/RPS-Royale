@@ -1,6 +1,20 @@
 import pygame
 from network import Network
 
+class Camera:
+    def __init__(self, width, height):
+        self.camera = pygame.Rect(0, 0, width, height)
+        self.width = width
+        self.height = height
+
+    def apply(self, entity):
+        return entity.rect.move(self.camera.topleft)
+
+    def update(self, target):
+        x = -target.rect.centerx + int(self.width / 2)
+        y = -target.rect.centery + int(self.height / 2)
+
+        self.camera = pygame.Rect(x, y, self.width, self.height)
 
 class Player():
     width = height = 50
@@ -10,24 +24,28 @@ class Player():
         self.y = starty
         self.velocity = 2
         self.color = color
-
+    
+    @property
+    def rect(self):
+        return pygame.Rect(self.x, self.y, self.width, self.height)
+    
     def draw(self, g):
         pygame.draw.rect(g, self.color ,(self.x, self.y, self.width, self.height), 0)
 
-    def move(self, dirn):
-        """
-        :param dirn: 0 - 3 (right, left, up, down)
-        :return: None
-        """
+    def move(self, direction):
+        if direction == 0:  # Rotate right
+            self.angle += self.rotation_speed
+        elif direction == 1:  # Rotate left
+            self.angle -= self.rotation_speed
+        elif direction == 2:  # Move forward
+            self.speed = min(self.speed + self.acceleration, self.max_speed)
 
-        if dirn == 0:
-            self.x += self.velocity
-        elif dirn == 1:
-            self.x -= self.velocity
-        elif dirn == 2:
-            self.y -= self.velocity
-        else:
-            self.y += self.velocity
+        # Update position based on speed and angle
+        self.x += math.cos(math.radians(self.angle)) * self.speed
+        self.y += math.sin(math.radians(self.angle)) * self.speed
+
+        # Deceleration
+        self.speed *= 0.99
 
 
 class Game:
@@ -39,37 +57,28 @@ class Game:
         self.player = Player(50, 50)
         self.player2 = Player(100,100)
         self.canvas = Canvas(self.width, self.height, "Testing...")
+        self.camera = Camera(w, h)
 
     def run(self):
         clock = pygame.time.Clock()
         run = True
         while run:
             clock.tick(60)
+            self.camera.update(self.player)
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False
-
-                if event.type == pygame.K_ESCAPE:
-                    run = False
+            for entity in [self.player, self.player2]:
+                self.canvas.get_canvas().blit(entity.surf, self.camera.apply(entity))
 
             keys = pygame.key.get_pressed()
 
             if keys[pygame.K_RIGHT]:
-                if self.player.x <= self.width - self.player.velocity:
-                    self.player.move(0)
+                self.player.move(0)
 
             if keys[pygame.K_LEFT]:
-                if self.player.x >= self.player.velocity:
-                    self.player.move(1)
+                self.player.move(1)
 
             if keys[pygame.K_UP]:
-                if self.player.y >= self.player.velocity:
-                    self.player.move(2)
-
-            if keys[pygame.K_DOWN]:
-                if self.player.y <= self.height - self.player.velocity:
-                    self.player.move(3)
+                self.player.move(2)
 
             # Send Network Stuff
             self.player2.x, self.player2.y = self.parse_data(self.send_data())
