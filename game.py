@@ -37,11 +37,11 @@ class Player():
     def rect(self):
         return pygame.Rect(self.x, self.y, self.width, self.height)
     
-    def draw(self, g):
+    def draw(self, g, camera):
         self.surf = pygame.Surface((self.width, self.height))
         self.surf.fill(self.color)
-        g.blit(self.surf, (self.x, self.y))
-
+        g.blit(self.surf, camera.apply(self))
+        
     def move(self, direction):
         if direction == 0:  # Rotate right
             self.angle += self.rotation_speed
@@ -81,7 +81,7 @@ class Game:
                     run = False
 
             for entity in [self.player, self.player2]:
-                entity.draw(self.canvas.get_canvas())
+                entity.draw(self.canvas.get_canvas(), self.camera)
 
             keys = pygame.key.get_pressed()
 
